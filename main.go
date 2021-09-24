@@ -2,7 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
 	"net/url"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -52,6 +57,74 @@ type GetHighlightsResponse struct {
 	Results  []Highlight `json:"results"`
 }
 
-func main() {
+type GetHighlightsRequest struct {
+	PageSize        uint16 // default: 100, max: 1000
+	Page            uint64
+	BookID          *uint64
+	UpdatedLT       *time.Time
+	UpdatedGT       *time.Time
+	HighlightedAtLT *time.Time
+	HighlightedAtGT *time.Time
+}
 
+func Get(url *url.URL, token string, ghreq *GetHighlightsRequest) (*GetHighlightsResponse, error) {
+	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	h := req.Header
+	h.Add("Authorization", "Token "+token)
+
+	q := req.URL.Query()
+	q.Add("page_size", strconv.Itoa(int(ghreq.PageSize)))
+	q.Add("page", strconv.Itoa(int(ghreq.Page)))
+	if ghreq.BookID != nil {
+		q.Add("book_id", strconv.Itoa(int(*ghreq.BookID)))
+	}
+	if ghreq.UpdatedLT != nil {
+		q.Add("updated__lt", ghreq.UpdatedLT.Format(time.RFC3339Nano))
+	}
+	if ghreq.UpdatedGT != nil {
+		q.Add("updated__gt", ghreq.UpdatedGT.Format(time.RFC3339Nano))
+	}
+	if ghreq.HighlightedAtLT != nil {
+		q.Add("highlighted_at__lt", ghreq.HighlightedAtLT.Format(time.RFC3339Nano))
+	}
+	if ghreq.HighlightedAtGT != nil {
+		q.Add("highlighted_at__gt", ghreq.HighlightedAtGT.Format(time.RFC3339Nano))
+	}
+	req.URL.RawQuery = q.Encode()
+
+	client := http.DefaultClient
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	var ghres GetHighlightsResponse
+	if err = json.NewDecoder(res.Body).Decode(&ghres); err != nil {
+		return nil, err
+	}
+
+	return &ghres, nil
+}
+
+func main() {
+	req := GetHighlightsRequest{
+		PageSize: 10,
+		Page:     1,
+	}
+
+	u, _ := url.Parse("https://readwise.io/api/v2/highlights/")
+
+	res, err := Get(u, os.Getenv("API_TOKEN"), &req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, h := range res.Results {
+		fmt.Println(h)
+	}
 }

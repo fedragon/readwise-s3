@@ -27,41 +27,41 @@ func (ju *JsonURL) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type GetHighlightsResponse struct {
+type ListResponse struct {
 	Count    uint64          `json:"count"`
 	Next     *JsonURL        `json:"next"`
 	Previous *JsonURL        `json:"previous"`
 	Results  json.RawMessage `json:"results"`
 }
 
-type GetHighlightsRequest struct {
+type ListRequest struct {
 	PageSize uint16 // default: 100, max: 1000
 }
 
-func Get(url *url.URL, token string, ghreq *GetHighlightsRequest) (*GetHighlightsResponse, error) {
-	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+func Get(url *url.URL, token string, ghreq *ListRequest) (*ListResponse, error) {
+	httpReq, err := http.NewRequest(http.MethodGet, url.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	h := req.Header
+	h := httpReq.Header
 	h.Add("Authorization", "Token "+token)
 
-	q := req.URL.Query()
+	q := httpReq.URL.Query()
 	q.Add("page_size", strconv.Itoa(int(ghreq.PageSize)))
-	req.URL.RawQuery = q.Encode()
+	httpReq.URL.RawQuery = q.Encode()
 
 	client := http.DefaultClient
-	res, err := client.Do(req)
+	httpRes, err := client.Do(httpReq)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer httpRes.Body.Close()
 
-	var ghres GetHighlightsResponse
-	if err = json.NewDecoder(res.Body).Decode(&ghres); err != nil {
+	var res ListResponse
+	if err = json.NewDecoder(httpRes.Body).Decode(&res); err != nil {
 		return nil, err
 	}
 
-	return &ghres, nil
+	return &res, nil
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -50,13 +51,11 @@ func main() {
 func backup(ctx context.Context, resource string, token string, client *s3.Client, bucket *string) error {
 	count := 1
 	u, _ := url.Parse(fmt.Sprintf("https://readwise.io/api/v2/%s/", resource))
-	req := readwise.ListRequest{
-		PageSize: 1000,
-	}
+	reqCtx := readwise.NewListRequestContext(&http.Client{Timeout: time.Second * 30}, u, token, 1000)
 
 	for {
 		fmt.Printf("GET %v\n", u)
-		res, err := readwise.Get(u, token, &req)
+		res, err := readwise.Get(reqCtx)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -71,7 +70,7 @@ func backup(ctx context.Context, resource string, token string, client *s3.Clien
 		}
 
 		count++
-		u = &res.Next.Url
+		reqCtx.SetURL(&res.Next.Url)
 	}
 
 	return nil

@@ -9,9 +9,10 @@ Performs a backup of all [Readwise.io](https://readwise.io) highlights to AWS S3
 
 ## Usage
 
+Grab one of the binaries from the `Releases` page, then
+
 ```shell
-make build
-READWISE_API_TOKEN='<your_token>' S3_BUCKET_PREFIX='<whatever>' bin/readwise-s3
+READWISE_API_TOKEN='<your_token>' S3_BUCKET_PREFIX='<whatever>' /path/to/readwise-s3
 ```
 
 This will generate a bucket named `<whatever>-readwiseio-<current_timestamp>`, whose contents will look like this:

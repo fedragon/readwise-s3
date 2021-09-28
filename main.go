@@ -57,12 +57,12 @@ func backup(ctx context.Context, resource string, token string, client *s3.Clien
 		fmt.Printf("GET %v\n", u)
 		res, err := readwise.Get(reqCtx)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		objectName := fmt.Sprintf("%s-%03d.json", resource, count)
 		if err := aws.UploadToS3(ctx, client, bucket, &objectName, bytes.NewReader(res.Results)); err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		if res.Next == nil {
